@@ -1,0 +1,919 @@
+<title>Pourquoi LuxProvide — Cas d'usage</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="Pourquoi avons-nous besoin de LuxProvide : six cas d'usage, puissance de calcul et souveraineté.">
+
+<style>
+  :root{
+    --ink:#000000;--paper:#ffffff;
+    --fog-1:rgba(255,255,255,.62);--fog-2:rgba(255,255,255,.40);--fog-3:rgba(255,255,255,.22);
+    --hair:rgba(255,255,255,.14);--hair-2:rgba(255,255,255,.07);
+    --sans:'Helvetica Neue',Helvetica,'Arial Nova',Arial,sans-serif;
+    --mono:ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,monospace;
+    --e:cubic-bezier(.16,1,.3,1);--pad:clamp(26px,6vw,120px);
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{height:100%}
+  body{background:var(--ink);color:var(--paper);font-family:var(--sans);-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;overflow:hidden;letter-spacing:-.01em}
+
+  #gl{position:fixed;inset:0;width:100%;height:100%;display:block;z-index:0}
+  .vignette{position:fixed;inset:0;z-index:1;pointer-events:none;
+    background:radial-gradient(120% 90% at 50% 42%,transparent 38%,rgba(0,0,0,.55) 82%,rgba(0,0,0,.86) 100%),
+    linear-gradient(to bottom,rgba(0,0,0,.35),transparent 22% 78%,rgba(0,0,0,.5))}
+  .grain{position:fixed;inset:-120%;z-index:2;pointer-events:none;opacity:.05;mix-blend-mode:screen;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    animation:grain 6s steps(6) infinite}
+  @keyframes grain{0%{transform:translate(0,0)}20%{transform:translate(-6%,4%)}40%{transform:translate(4%,-6%)}60%{transform:translate(-4%,6%)}80%{transform:translate(6%,-2%)}100%{transform:translate(0,0)}}
+
+  #deck{position:fixed;inset:0;z-index:5}
+  .scene{position:fixed;inset:0;display:grid;align-content:center;justify-items:start;padding:var(--pad);
+    opacity:0;visibility:hidden;pointer-events:none;transition:opacity .8s var(--e),visibility .8s var(--e)}
+  .scene.is-active{opacity:1;visibility:visible;pointer-events:auto}
+  .wrap{width:100%;max-width:min(1240px,94vw)}
+
+  .eyebrow{font-family:var(--mono);font-size:clamp(10px,1vw,12.5px);letter-spacing:.42em;text-transform:uppercase;color:var(--fog-2);
+    display:flex;align-items:center;gap:16px;margin-bottom:clamp(16px,2.4vw,32px);flex-wrap:wrap}
+  .eyebrow .tag{color:var(--paper)}
+  .eyebrow .bar{height:1px;width:clamp(28px,5vw,72px);background:var(--hair);display:inline-block}
+  .eyebrow .idx{color:var(--fog-3);font-variant-numeric:tabular-nums}
+
+  h1,h2{font-weight:700;line-height:.94;letter-spacing:-.035em;text-wrap:balance}
+  .display-xl{font-size:clamp(46px,10vw,168px);line-height:.9;letter-spacing:-.045em}
+  .head{font-size:clamp(28px,4.8vw,76px)}
+  .thin{font-weight:300}.fog{color:var(--fog-2)}
+  .lead{font-size:clamp(16px,1.7vw,22px);line-height:1.5;font-weight:300;max-width:54ch;color:var(--fog-1);margin-top:clamp(18px,2.2vw,30px)}
+  .lead strong{color:var(--paper);font-weight:500}
+
+  .mask{overflow:hidden;display:block;padding-bottom:.04em}
+  .mask>span{display:block;transform:translateY(116%);transition:transform 1.05s var(--e);transition-delay:calc(var(--d,0)*.075s + .12s)}
+  .is-active .mask>span{transform:translateY(0)}
+  .fade{opacity:0;transform:translateY(28px);transition:opacity .95s var(--e),transform .95s var(--e);transition-delay:calc(var(--d,0)*.075s + .18s)}
+  .is-active .fade{opacity:1;transform:none}
+
+  .hero-sub{margin-top:clamp(28px,3.4vw,50px)}
+  .hero-sub p{font-size:clamp(16px,1.7vw,22px);font-weight:300;color:var(--fog-1);max-width:46ch;line-height:1.5}
+  .hero-sub strong{color:var(--paper);font-weight:500}
+  .cue{display:flex;align-items:center;gap:14px;margin-top:clamp(30px,4vw,56px);font-family:var(--mono);font-size:11.5px;letter-spacing:.24em;text-transform:uppercase;color:var(--fog-2)}
+  .cue .key{border:1px solid var(--hair);border-radius:5px;padding:5px 9px;color:var(--paper);font-size:11px;letter-spacing:.05em;animation:pulse 2.6s var(--e) infinite}
+  @keyframes pulse{0%,100%{opacity:.55;transform:translateX(0)}50%{opacity:1;transform:translateX(4px)}}
+
+  .srcnote{font-family:var(--mono);font-size:clamp(9px,.85vw,11px);letter-spacing:.08em;color:var(--fog-3);margin-top:clamp(18px,2.2vw,30px);text-transform:uppercase}
+  .rgpd{display:flex;gap:14px;align-items:baseline;margin-top:clamp(18px,2.4vw,32px);border-left:2px solid var(--paper);padding-left:16px;max-width:72ch}
+  .rgpd .rk{font-family:var(--mono);font-size:10.5px;letter-spacing:.24em;text-transform:uppercase;color:var(--paper);flex:none}
+  .rgpd .rt{font-size:clamp(13px,1.25vw,16px);font-weight:300;color:var(--fog-1);line-height:1.45}
+  .rgpd .rt b{color:var(--paper);font-weight:600}
+
+  /* two-column stage */
+  .stage{display:grid;grid-template-columns:1.02fr .98fr;gap:clamp(26px,3.6vw,60px);margin-top:clamp(18px,2.4vw,34px);width:100%;align-items:center}
+  .stage.rev{grid-template-columns:.98fr 1.02fr}
+  .stage .svgwrap{width:100%}
+  .stage svg{width:100%;height:auto;display:block;overflow:visible}
+  .stage-copy{display:flex;flex-direction:column;gap:clamp(14px,1.8vw,22px)}
+  .stage-copy .big{font-size:clamp(20px,2.3vw,33px);font-weight:600;line-height:1.1;letter-spacing:-.02em}
+  .stage-copy .big b{font-weight:700}
+  .taglist{display:flex;flex-direction:column;gap:11px}
+  .tagline{display:flex;align-items:baseline;gap:12px;font-size:clamp(13px,1.25vw,17px);font-weight:300;color:var(--fog-1);line-height:1.4}
+  .tagline .tk{font-family:var(--mono);font-size:11px;color:var(--fog-3);flex:none;width:2.4ch}
+  .tagline b{color:var(--paper);font-weight:600}
+  @media(max-width:900px){.stage,.stage.rev{grid-template-columns:1fr;gap:26px}}
+
+  .chips-row{display:flex;flex-wrap:wrap;gap:10px}
+  .chip{font-family:var(--mono);font-size:clamp(10px,.95vw,12.5px);letter-spacing:.06em;color:var(--fog-1);border:1px solid var(--hair);border-radius:999px;padding:8px 14px;white-space:nowrap}
+  .chip b{color:var(--paper);font-weight:600;font-variant-numeric:tabular-nums}
+  .chip.hot{border-color:rgba(255,255,255,.45);color:var(--paper)}
+
+  /* big number */
+  .bignum{display:flex;align-items:baseline;line-height:.85}
+  .bn{font-size:clamp(64px,10.5vw,150px);font-weight:700;letter-spacing:-.05em;font-variant-numeric:tabular-nums}
+  .bnu{font-size:clamp(22px,3vw,46px);font-weight:400;color:var(--fog-2);margin-left:.12em}
+  .bnlab{font-size:clamp(14px,1.4vw,19px);font-weight:300;color:var(--fog-1);margin-top:12px;max-width:32ch}
+  .bnlab b{color:var(--paper);font-weight:600}
+
+  /* proportion bar (market) */
+  .propbar{margin-top:clamp(20px,2.6vw,34px);max-width:560px;width:100%}
+  .prophead{display:flex;justify-content:space-between;font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--fog-2);margin-bottom:10px}
+  .prophead b{color:var(--paper)}
+  .ptrack{position:relative;height:14px;border:1px solid var(--hair)}
+  .pfill{position:absolute;left:0;top:0;bottom:0;width:0;background:var(--paper);box-shadow:0 0 22px rgba(255,255,255,.45)}
+
+  /* model matrix */
+  .matrix{display:grid;grid-template-columns:repeat(15,1fr);gap:clamp(4px,.5vw,7px);width:100%;max-width:380px}
+  .cell{aspect-ratio:1;border:1px solid var(--hair);border-radius:2px}
+  .cell.on{background:var(--paper);border-color:var(--paper);box-shadow:0 0 10px rgba(255,255,255,.5)}
+  .matrix-lab{font-family:var(--mono);font-size:clamp(10px,.95vw,12px);letter-spacing:.1em;text-transform:uppercase;color:var(--fog-2);margin-top:16px;line-height:1.55}
+  .matrix-lab b{color:var(--paper)}
+
+  /* time compare */
+  .tcompare{display:flex;flex-direction:column;gap:clamp(14px,1.8vw,22px)}
+  .trow{display:grid;grid-template-columns:11ch 1fr auto;gap:14px;align-items:center}
+  .trow .tl{font-family:var(--mono);font-size:clamp(10px,.9vw,11.5px);letter-spacing:.06em;text-transform:uppercase;color:var(--fog-2)}
+  .ttrack{position:relative;height:2px;background:var(--hair)}
+  .tfill{position:absolute;left:0;top:-4px;height:10px;width:0;background:var(--fog-2)}
+  .tfill.fast{background:var(--paper);box-shadow:0 0 22px rgba(255,255,255,.6)}
+  .trow .tv{font-size:clamp(13px,1.3vw,18px);font-weight:600;white-space:nowrap}
+  .trow .tv.dim{color:var(--fog-2);font-weight:300}
+
+  /* scenario cascade (uc2) */
+  .scen{display:flex;align-items:center;flex-wrap:wrap;gap:10px;font-family:var(--mono);font-size:clamp(10px,1vw,13px);letter-spacing:.05em}
+  .scen .sc{border:1px solid var(--hair);padding:8px 13px;border-radius:4px;color:var(--fog-1)}
+  .scen .sx{color:var(--fog-3)}
+  .scen .sr{border-color:rgba(255,255,255,.5);color:var(--paper);border-radius:4px;padding:8px 13px;border:1px solid rgba(255,255,255,.5)}
+
+  /* ROI bars (uc3) */
+  .roibars{display:flex;flex-direction:column;gap:clamp(14px,1.8vw,22px);max-width:560px;width:100%;margin-top:clamp(18px,2.2vw,28px)}
+  .roirow{display:grid;grid-template-columns:13ch 1fr;gap:14px;align-items:center}
+  .roirow .rl{font-family:var(--mono);font-size:clamp(10px,.9vw,11.5px);letter-spacing:.06em;text-transform:uppercase;color:var(--fog-2);text-align:right}
+  .rtrack{position:relative;height:2px;background:var(--hair)}
+  .rfill{position:absolute;left:0;top:-2px;height:6px;width:0;background:var(--paper);box-shadow:0 0 20px rgba(255,255,255,.5)}
+  .rfill.one{top:-1px;height:4px;opacity:.5;background:var(--fog-1);box-shadow:none}
+
+  /* gauge */
+  .gauge-wrap{position:relative;width:clamp(140px,13.5vw,196px);aspect-ratio:1}
+  .gauge{width:100%;height:100%;display:block}
+  .gtrack{fill:none;stroke:var(--hair);stroke-width:4}
+  .gfill{fill:none;stroke:var(--paper);stroke-width:4;stroke-linecap:round;filter:drop-shadow(0 0 10px rgba(255,255,255,.45))}
+  .gcenter{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px}
+  .gval{display:flex;align-items:baseline;line-height:1}
+  .gnum{font-size:clamp(28px,3.2vw,46px);font-weight:700;font-variant-numeric:tabular-nums;letter-spacing:-.03em}
+  .gpct{font-size:clamp(13px,1.3vw,18px);font-weight:400;color:var(--fog-2);margin-left:2px}
+  .gcenter em{font-style:normal;font-family:var(--mono);font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--fog-2);text-align:center;line-height:1.5}
+
+  /* svg diagram shared */
+  .nd{fill:var(--ink);stroke:var(--hair);stroke-width:1.5}
+  .nd.core{stroke:var(--paper);stroke-width:2}
+  .ndlab{fill:var(--fog-1);font-family:var(--mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase}
+  .ndlab.c{fill:var(--paper)}
+  .edge{stroke:var(--hair);stroke-width:1;fill:none}
+  .edge.live{stroke:var(--fog-1)}
+  .edge.deny{stroke:rgba(255,255,255,.25);stroke-dasharray:4 5}
+  .pkt{fill:var(--paper)}
+  .bound{fill:none;stroke:var(--hair-2);stroke-width:1;stroke-dasharray:3 6}
+  .boundlab{fill:var(--fog-2);font-family:var(--mono);font-size:10px;letter-spacing:.18em;text-transform:uppercase}
+  .modrect{fill:var(--ink);stroke:var(--hair);stroke-width:1.5}
+  .modrect.live{stroke:var(--paper)}
+  .modlab{fill:var(--fog-1);font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase}
+  .modlab.live{fill:var(--paper)}
+  .modsub{fill:var(--fog-3);font-family:var(--mono);font-size:8.5px;letter-spacing:.12em;text-transform:uppercase}
+  .xmark{stroke:var(--paper);stroke-width:2.5;stroke-linecap:round}
+
+  /* radar (uc7) */
+  .rgrid{fill:none;stroke:var(--hair-2);stroke-width:1}
+  .raxis{stroke:var(--hair);stroke-width:1}
+  .rpoly{fill:rgba(255,255,255,.06);stroke:var(--paper);stroke-width:1.8;stroke-linejoin:round;filter:drop-shadow(0 0 10px rgba(255,255,255,.35))}
+  .rdot{fill:var(--paper)}
+  .rlab{fill:var(--fog-1);font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase}
+  .rcenter{fill:var(--paper);font-family:var(--sans);font-weight:700;font-size:15px;letter-spacing:-.01em}
+
+  .vcirc{fill:rgba(255,255,255,.05);stroke:rgba(255,255,255,.42);stroke-width:1.5}
+  .vlabel{fill:var(--paper);font-family:var(--mono);font-size:12px;letter-spacing:.14em;text-transform:uppercase}
+  .vcenter{fill:var(--paper);font-family:var(--sans);font-weight:700;font-size:19px;letter-spacing:-.01em}
+
+  .closing{font-size:clamp(28px,4.6vw,66px);font-weight:300;line-height:1.03;letter-spacing:-.03em;margin-top:clamp(22px,2.6vw,38px)}
+  .closing b{font-weight:700}
+
+  /* HUD */
+  .hud{position:fixed;inset:0;z-index:8;pointer-events:none;font-family:var(--mono)}
+  .topbar{position:absolute;top:0;left:0;right:0;height:2px;background:var(--hair-2)}
+  .topbar i{display:block;height:100%;width:0;background:var(--paper);transition:width 1s var(--e)}
+  .brand{position:absolute;top:clamp(20px,3vw,34px);left:var(--pad);font-size:11px;letter-spacing:.3em;text-transform:uppercase;color:var(--fog-1)}
+  .brand b{color:var(--paper)}
+  .meta{position:absolute;top:clamp(20px,3vw,34px);right:var(--pad);text-align:right;font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:var(--fog-2)}
+  .meta .act{color:var(--paper);display:block;margin-bottom:6px;transition:opacity .5s}
+  .meta .count{color:var(--fog-2);font-variant-numeric:tabular-nums}
+  .meta .count b{color:var(--paper)}
+  .rail{position:absolute;right:clamp(20px,2.6vw,40px);top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:12px;pointer-events:auto}
+  .rail button{all:unset;cursor:pointer;display:block;width:26px;height:9px;position:relative}
+  .rail button::after{content:"";position:absolute;right:0;top:50%;transform:translateY(-50%);width:16px;height:1.5px;background:var(--hair);transition:width .5s var(--e),background .5s var(--e)}
+  .rail button[aria-current="true"]::after{width:26px;background:var(--paper)}
+  .rail button:hover::after{background:var(--fog-1);width:26px}
+  .foot{position:absolute;left:var(--pad);bottom:clamp(20px,3vw,32px);display:flex;gap:22px;align-items:center;font-size:10.5px;letter-spacing:.18em;text-transform:uppercase;color:var(--fog-3)}
+  .foot span{display:flex;gap:8px;align-items:center}
+  .foot kbd{font-family:var(--mono);border:1px solid var(--hair);border-radius:4px;padding:3px 6px;color:var(--fog-1);font-size:10px;letter-spacing:.04em}
+
+  @media (prefers-reduced-motion: reduce){.mask>span{transition-duration:.4s}.fade{transition-duration:.4s}.grain{animation:none}.cue .key{animation:none}}
+  @media(max-width:640px){.rail{display:none}.foot{font-size:9px;gap:14px}}
+  @media(max-height:760px){
+    .head{font-size:clamp(26px,4.2vw,60px)}
+    .eyebrow{margin-bottom:14px}
+    .stage{margin-top:14px}
+    .rgpd{margin-top:14px}
+  }
+</style>
+
+<canvas id="gl"></canvas>
+<div class="vignette"></div>
+<div class="grain"></div>
+
+<main id="deck">
+
+  <!-- 00 OUVERTURE -->
+  <section class="scene" data-act="OUVERTURE" data-form="0" data-num="00">
+    <div class="wrap">
+      <div class="eyebrow fade" style="--d:0"><span class="tag">Pourquoi LuxProvide</span><span class="bar"></span><span class="idx">Programme INITIATE</span></div>
+      <h1 class="display-xl">
+        <span class="mask"><span style="--d:1">Pourquoi</span></span>
+        <span class="mask"><span style="--d:2">avons-nous besoin</span></span>
+        <span class="mask"><span style="--d:3" class="thin fog">de vous ?</span></span>
+      </h1>
+      <div class="hero-sub fade" style="--d:5"><p>Deux besoins réels : de la <strong>puissance de calcul</strong> et de la <strong>souveraineté</strong>. Six cas d'usage concrets — pas un supercalculateur « pour tout ».</p></div>
+      <div class="cue fade" style="--d:6"><span class="key">→</span> À l'attention de Vittorio Santonocito · Head of Startups</div>
+    </div>
+  </section>
+
+  <!-- 01 QUI NOUS SOMMES -->
+  <section class="scene" id="who" data-act="QUI NOUS SOMMES" data-form="1" data-num="01">
+    <div class="wrap">
+      <div class="eyebrow fade" style="--d:0"><span class="tag">Qui nous sommes</span><span class="bar"></span><span class="idx">01 · Deux fondateurs, une équipe</span></div>
+      <h2 class="head">
+        <span class="mask"><span style="--d:1">On construit,</span></span>
+        <span class="mask"><span style="--d:2" class="thin fog">ensemble.</span></span>
+      </h2>
+      <div class="stage fade" style="--d:3">
+        <div>
+          <div class="bignum"><span class="bn" data-to="773">0</span><span class="bnu">h/an</span></div>
+          <div class="bnlab">libérées par les <b>automatisations que nous avons mises en production</b> — <b>≈ 0,44 ETP</b>, pour <b>~120 €/mois</b> d'outillage.</div>
+        </div>
+        <div class="stage-copy">
+          <div class="big">Un produit <b>et</b> une exécution — déjà en production.</div>
+          <div class="taglist">
+            <div class="tagline"><span class="tk">→</span><span><b>SixSeven</b>, notre app de gestion d'équipe, tourne en production au rooftop du <b>Royal Hamilius</b> (Luxembourg-Ville) — déploiement en cours chez <b>Mess Family Groupe</b> (marque Grand Mess, France).</span></div>
+            <div class="tagline"><span class="tk">→</span><span><b>8 automatisations</b> en production dans le Middle/Back Office et le pôle fiscal d'<b>une grande banque de la place</b>.</span></div>
+            <div class="tagline"><span class="tk">→</span><span>Structure de facturation B2B luxembourgeoise <b>opérationnelle</b>.</span></div>
+          </div>
+          <div class="chips-row"><div class="chip">Modal</div><div class="chip">Supabase</div><div class="chip">React Native</div><div class="chip hot">agents Claude</div></div>
+        </div>
+      </div>
+      <div class="cue fade" style="--d:6"><span class="key" style="animation:none">→</span> Marco Michon · Gaspard Briand — cofondateurs, Qualee</div>
+    </div>
+  </section>
+
+  <!-- 02 LE MARCHÉ -->
+  <section class="scene" id="market" data-act="LE MARCHÉ" data-form="3" data-num="02">
+    <div class="wrap">
+      <div class="eyebrow fade" style="--d:0"><span class="tag">Le marché</span><span class="bar"></span><span class="idx">02 · Un vrai besoin, un vrai marché</span></div>
+      <h2 class="head">
+        <span class="mask"><span style="--d:1">Un marché,</span></span>
+        <span class="mask"><span style="--d:2" class="thin fog">pas une cause.</span></span>
+      </h2>
+      <div class="stage fade" style="--d:3">
+        <div>
+          <div class="bignum"><span class="bn" data-to="58.2" data-dec="1">0</span><span class="bnu">Mt</span></div>
+          <div class="bnlab">de nourriture gaspillée <b>chaque année dans l'UE</b> — <b data-to="132" data-suffix=" milliards €" class="cn">0</b> de valeur perdue.</div>
+          <div class="propbar">
+            <div class="prophead"><span>Part de la restauration</span><b><span data-to="11">0</span> %</b></div>
+            <div class="ptrack"><i class="pfill" data-v="11"></i></div>
+          </div>
+        </div>
+        <div class="stage-copy">
+          <div class="big">La prévision fine attaque <b>directement</b> cette part.</div>
+          <div class="taglist">
+            <div class="tagline"><span class="tk">→</span><span>Notre terrain : la restauration — <b>11 %</b> du gaspillage européen.</span></div>
+            <div class="tagline"><span class="tk">→</span><span>Chaque point de gaspillage évité = <b>marge directe</b> pour nos clients.</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="srcnote fade" style="--d:5">Eurostat 2023 · Commission européenne SWD(2023)421</div>
+    </div>
+  </section>
+
+  <!-- 03 UC2 PRÉVISION PLATEFORME -->
+  <section class="scene" id="uc2" data-act="CAS D'USAGE 1/6" data-form="2" data-num="03">
+    <div class="wrap">
+      <div class="eyebrow fade" style="--d:0"><span class="tag">Cas d'usage 1</span><span class="bar"></span><span class="idx">03 · Prévision à l'échelle de la plateforme</span></div>
+      <h2 class="head">
+        <span class="mask"><span style="--d:1">Pas un modèle.</span></span>
+        <span class="mask"><span style="--d:2" class="thin fog">Une flotte.</span></span>
+      </h2>
+      <div class="stage fade" style="--d:3">
+        <div>
+          <div class="matrix"></div>
+          <div class="matrix-lab">Des <b>centaines d'établissements</b> ×<br>des <b>milliers de références</b> —<br>réentraînés et backtestés <b>chaque jour</b>.</div>
+        </div>
+        <div class="stage-copy">
+          <div class="chips-row">
+            <div class="chip">ventes</div><div class="chip">météo</div><div class="chip">événements locaux</div><div class="chip">prix</div><div class="chip">≈ <b>900–1 400</b> GPU·h/an</div>
+          </div>
+          <div class="scen">
+            <span class="sc">canicule</span><span class="sx">+</span><span class="sc">prix +10 %</span><span class="sx">+</span><span class="sc">nouveau menu</span><span class="sx">→</span><span class="sr">impact stocks ?</span>
+          </div>
+          <div class="tcompare">
+            <div class="trow"><span class="tl">Infra classique</span><div class="ttrack"><i class="tfill" data-v="100"></i></div><span class="tv dim">des jours</span></div>
+            <div class="trow"><span class="tl">MeluXina</span><div class="ttrack"><i class="tfill fast" data-v="16"></i></div><span class="tv">quelques heures</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="rgpd fade" style="--d:6"><span class="rk">RGPD</span><span class="rt">Fidélité &amp; livraison = <b>données clients</b> — entraînées sur une infra souveraine, elles <b>ne quittent jamais l'UE</b>. Minimisation stricte, sans raccourcis.</span></div>
+    </div>
+  </section>
+
+  <!-- 04 UC3 ANTI-GASPILLAGE -->
+  <section class="scene" id="uc3" data-act="CAS D'USAGE 2/6" data-form="5" data-num="04">
+    <div class="wrap">
+      <div class="eyebrow fade" style="--d:0"><span class="tag">Cas d'usage 2</span><span class="bar"></span><span class="idx">04 · Optimisation anti-gaspillage</span></div>
+      <h2 class="head">
+        <span class="mask"><span style="--d:1">Le meilleur ROI</span></span>
+        <span class="mask"><span style="--d:2" class="thin fog">du secteur.</span></span>
+      </h2>
+      <div class="stage fade" style="--d:3">
+        <div>
+          <div class="bignum"><span class="bn" data-to="7">0</span><span class="bnu">:1</span></div>
+          <div class="bnlab"><b>7 € économisés</b> pour chaque euro investi dans la réduction du gaspillage.</div>
+          <div class="roibars">
+            <div class="roirow"><span class="rl">1 € investi</span><div class="rtrack"><i class="rfill one" data-v="14"></i></div></div>
+            <div class="roirow"><span class="rl">7 € économisés</span><div class="rtrack"><i class="rfill" data-v="100"></i></div></div>
+          </div>
+        </div>
+        <div class="stage-copy">
+          <div style="display:flex;gap:clamp(18px,2.4vw,34px);align-items:center;flex-wrap:wrap">
+            <div class="gauge-wrap">
+              <svg class="gauge" viewBox="0 0 200 200" aria-hidden="true">
+                <circle class="gtrack" cx="100" cy="100" r="86"></circle>
+                <circle class="gfill" cx="100" cy="100" r="86" transform="rotate(-90 100 100)" data-pct="26"></circle>
+              </svg>
+              <div class="gcenter"><div class="gval"><span style="font-size:.6em;color:var(--fog-2);margin-right:2px">−</span><span class="gnum" data-to="26">0</span><span class="gpct">%</span></div><em>de gaspillage<br>dès l'année 1</em></div>
+            </div>
+            <div class="taglist" style="flex:1;min-width:220px">
+              <div class="tagline"><span class="tk">→</span><span>Achats, production et menus planifiés pour <b>minimiser les pertes</b> sur tout un réseau.</span></div>
+              <div class="tagline"><span class="tk">→</span><span>Optimisation combinatoire + simulation : une charge qui <b>explose avec l'échelle</b> — exactement ce que MeluXina absorbe.</span></div>
+            </div>
+          </div>
+          <div class="chips-row">
+            <div class="chip"><b>114</b> restaurants · <b>12</b> pays</div>
+            <div class="chip hot">AI Factory · secteur durabilité</div>
+            <div class="chip">le supercalculateur le plus vert d'Europe</div>
+            <div class="chip">≈ <b>700–1 100</b> GPU·h/an</div>
+          </div>
+        </div>
+      </div>
+      <div class="rgpd fade" style="--d:6"><span class="rk">RGPD</span><span class="rt">Les données opérationnelles croisent les <b>plannings du personnel</b> — des données RH traitées, elles aussi, <b>sans transfert hors UE</b>.</span></div>
+      <div class="srcnote fade" style="--d:7">Champions 12.3 / WRAP · World Resources Institute, 2019</div>
+    </div>
+  </section>
+
+  <!-- 05 UC4 DONNÉES SYNTHÉTIQUES -->
+  <section class="scene" id="uc4" data-act="CAS D'USAGE 3/6" data-form="4" data-num="05">
+    <div class="wrap">
+      <div class="eyebrow fade" style="--d:0"><span class="tag">Cas d'usage 3</span><span class="bar"></span><span class="idx">05 · Données synthétiques — scénario Société Générale</span></div>
+      <h2 class="head">
+        <span class="mask"><span style="--d:1">Le mur RGPD,</span></span>
+        <span class="mask"><span style="--d:2" class="thin fog">transformé en avantage.</span></span>
+      </h2>
+      <div class="stage fade" style="--d:3">
+        <div class="svgwrap"><svg id="pipesvg" viewBox="0 0 460 300" aria-hidden="true"></svg></div>
+        <div class="stage-copy">
+          <div class="big">Un choix de plat peut révéler <b>religion ou santé</b> — donnée sensible, article 9.</div>
+          <div class="taglist">
+            <div class="tagline"><span class="tk">01</span><span>Badgeage, fréquentation, régimes (sans porc, sans gluten, diabétique) : <b>inutilisables librement</b> pour l'entraînement.</span></div>
+            <div class="tagline"><span class="tk">02</span><span>MeluXina génère des <b>données synthétiques</b> — statistiquement fidèles, <b>zéro donnée personnelle réelle</b>.</span></div>
+            <div class="tagline"><span class="tk">03</span><span>Les vraies données <b>ne quittent jamais leur périmètre</b> — et la charge GPU générative justifie pleinement l'infra.</span></div>
+          </div>
+          <div class="chips-row"><div class="chip hot">≈ <b>1 600–2 200</b> GPU·h/an</div></div>
+        </div>
+      </div>
+      <div class="rgpd fade" style="--d:6"><span class="rk">RGPD</span><span class="rt">Une contrainte qui <b>bloquerait le contrat SocGen</b> devient un avantage technique — 100 % européen, <b>hors de portée du Cloud Act</b>.</span></div>
+    </div>
+  </section>
+
+  <!-- 06 UC5 APPRENTISSAGE FÉDÉRÉ -->
+  <section class="scene" id="uc5" data-act="CAS D'USAGE 4/6" data-form="3" data-num="06">
+    <div class="wrap">
+      <div class="eyebrow fade" style="--d:0"><span class="tag">Cas d'usage 4</span><span class="bar"></span><span class="idx">06 · Apprentissage fédéré</span></div>
+      <h2 class="head">
+        <span class="mask"><span style="--d:1">Le modèle voyage.</span></span>
+        <span class="mask"><span style="--d:2" class="thin fog">Jamais la donnée.</span></span>
+      </h2>
+      <div class="stage fade" style="--d:3">
+        <div class="svgwrap"><svg id="netsvg" viewBox="0 0 440 320" aria-hidden="true"></svg></div>
+        <div class="stage-copy">
+          <div class="big">« Vos données ne quittent jamais vos murs. » <b>Peu de concurrents savent le dire.</b></div>
+          <div class="taglist">
+            <div class="tagline"><span class="tk">01</span><span>Chaque établissement <b>calcule localement</b> — seuls les paramètres du modèle sont agrégés.</span></div>
+            <div class="tagline"><span class="tk">02</span><span><b>Privacy by design</b> (art. 25) : rien n'est rassemblé, rien n'est transféré — surface de risque réduite.</span></div>
+            <div class="tagline"><span class="tk">03</span><span>Orchestrer cet entraînement distribué est <b>exigeant</b> — c'est là que les équipes data de LuxProvide apportent une vraie valeur.</span></div>
+          </div>
+          <div class="chips-row"><div class="chip">banques</div><div class="chip">hôpitaux</div><div class="chip hot">différenciateur produit</div><div class="chip">≈ <b>250–400</b> GPU·h/an</div></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 07 UC7 OPTIMISATION MENUS -->
+  <section class="scene" id="uc7" data-act="CAS D'USAGE 5/6" data-form="1" data-num="07">
+    <div class="wrap">
+      <div class="eyebrow fade" style="--d:0"><span class="tag">Cas d'usage 5</span><span class="bar"></span><span class="idx">07 · Optimisation de menus multi-contraintes</span></div>
+      <h2 class="head">
+        <span class="mask"><span style="--d:1">Le menu parfait est</span></span>
+        <span class="mask"><span style="--d:2" class="thin fog">un problème de calcul.</span></span>
+      </h2>
+      <div class="stage rev fade" style="--d:3">
+        <div class="svgwrap" style="max-width:420px;margin:0 auto"><svg id="radarsvg" viewBox="0 0 360 330" aria-hidden="true"></svg></div>
+        <div class="stage-copy">
+          <div class="big">Cinq contraintes <b>simultanées</b>, des dizaines de sites, des cycles de plusieurs semaines.</div>
+          <div class="taglist">
+            <div class="tagline"><span class="tk">→</span><span><b>Normes imposées</b> : scolaires, régimes hospitaliers — aucune contrainte n'est optionnelle.</span></div>
+            <div class="tagline"><span class="tk">→</span><span>En restauration collective, le retour mesuré est de <b>6 pour 1</b> (86 sites, 6 pays).</span></div>
+            <div class="tagline"><span class="tk">→</span><span>Deux terrains de la <b>Luxembourg AI Factory</b> : durabilité <b>et</b> secteur public.</span></div>
+          </div>
+          <div class="chips-row"><div class="chip"><b>6:1</b> en collectif</div><div class="chip">hôpitaux · écoles · cantines</div><div class="chip hot">durabilité + secteur public</div><div class="chip">≈ <b>500–800</b> GPU·h/an</div></div>
+        </div>
+      </div>
+      <div class="rgpd fade" style="--d:6"><span class="rk">RGPD</span><span class="rt">Personnaliser selon <b>allergies et régimes</b> = données potentiellement sensibles (santé, religion) — un environnement souverain s'impose, <b>pas un cloud générique</b>.</span></div>
+      <div class="srcnote fade" style="--d:7">Champions 12.3 · business case food service providers</div>
+    </div>
+  </section>
+
+  <!-- 08 UC8 FLINKY -->
+  <section class="scene" id="uc8" data-act="CAS D'USAGE 6/6" data-form="2" data-num="08">
+    <div class="wrap">
+      <div class="eyebrow fade" style="--d:0"><span class="tag">Cas d'usage 6</span><span class="bar"></span><span class="idx">08 · Construire sur Flinky</span></div>
+      <h2 class="head">
+        <span class="mask"><span style="--d:1">Votre produit,</span></span>
+        <span class="mask"><span style="--d:2" class="thin fog">pas juste votre machine.</span></span>
+      </h2>
+      <div class="stage fade" style="--d:3">
+        <div class="svgwrap"><svg id="flinksvg" viewBox="0 0 460 300" aria-hidden="true"></svg></div>
+        <div class="stage-copy">
+          <div class="big">On adopte <b>Flinky</b> — et on gagne <b>des mois</b> de développement.</div>
+          <div class="taglist">
+            <div class="tagline"><span class="tk">01</span><span><b>OCR souverain</b> branché par API sur nos bons de livraison fournisseurs.</span></div>
+            <div class="tagline"><span class="tk">02</span><span><b>LLM souverain</b> pour notre assistant de cuisine.</span></div>
+            <div class="tagline"><span class="tk">03</span><span>Une logique de <b>partenariat</b> : nous construisons sur votre produit, pas seulement sur votre machine.</span></div>
+          </div>
+          <div class="chips-row"><div class="chip">≈ <b>400–650</b> GPU·h/an</div></div>
+        </div>
+      </div>
+      <div class="rgpd fade" style="--d:6"><span class="rk">RGPD</span><span class="rt">OCR et langage transitent par Flinky, pas par une API américaine — la conformité est <b>un acquis de départ</b>, pas un correctif.</span></div>
+    </div>
+  </section>
+
+  <!-- 09 SYNTHÈSE -->
+  <section class="scene" id="synth" data-act="SYNTHÈSE" data-form="5" data-num="09">
+    <div class="wrap">
+      <div class="eyebrow fade" style="--d:0"><span class="tag">Synthèse</span><span class="bar"></span><span class="idx">09 · Le mariage parfait</span></div>
+      <div class="stage fade" style="--d:2">
+        <div class="svgwrap" style="max-width:460px"><svg id="vennsvg" viewBox="0 0 400 340" aria-hidden="true"></svg></div>
+        <div class="stage-copy">
+          <h2 class="closing">
+            <span class="mask"><span style="--d:1">IA. <b>RGPD.</b></span></span>
+            <span class="mask"><span style="--d:2">Souveraineté.</span></span>
+          </h2>
+          <div class="big fade" style="--d:5">Un vrai besoin de calcul. Un vrai marché. Une contrainte réglementaire transformée en <b>avantage technique</b>.</div>
+        </div>
+      </div>
+      <div class="cue fade" style="--d:6"><span class="key" style="animation:none">←</span> Revenir</div>
+    </div>
+  </section>
+
+  <!-- 10 NOTRE DEMANDE -->
+  <section class="scene" id="ask" data-act="NOTRE DEMANDE" data-form="4" data-num="10">
+    <div class="wrap">
+      <div class="eyebrow fade" style="--d:0"><span class="tag">Notre demande</span><span class="bar"></span><span class="idx">10 · Accès au programme INITIATE</span></div>
+      <h2 class="head">
+        <span class="mask"><span style="--d:1">Ce que nous demandons,</span></span>
+        <span class="mask"><span style="--d:2" class="thin fog">concrètement.</span></span>
+      </h2>
+      <div class="stage fade" style="--d:3">
+        <div class="stage-copy">
+          <div class="big">Une trajectoire en <b>4 jalons</b>.</div>
+          <div class="taglist">
+            <div class="tagline"><span class="tk">M0</span><span>Cadrage avec Luxinnovation + <b>dépôt de l'aide d'État RDI</b>.</span></div>
+            <div class="tagline"><span class="tk">M1</span><span>Cas d'usage <b>prioritaires</b> en prototypage — données synthétiques, prévision plateforme.</span></div>
+            <div class="tagline"><span class="tk">M6</span><span>Reste des cas d'usage déployés + <b>premier bilan</b> de charge et d'impact.</span></div>
+            <div class="tagline"><span class="tk">M12</span><span>Bascule vers <b>Cashback 80 %</b> pour l'industrialisation.</span></div>
+          </div>
+        </div>
+        <div class="stage-copy">
+          <div class="big">Accès au programme <b>INITIATE</b> — calcul, crédits, mentorat — et un <b>référent ingénieur</b> pour le cadrage.</div>
+          <div class="bignum"><span class="bn" data-to="5450">0</span><span class="bnu">GPU·h</span></div>
+          <div class="bnlab">charge GPU <b>estimée sur 12 mois</b>, tous cas d'usage confondus — fourchette <b>≈ 4 350–6 550 GPU·h/an</b>.</div>
+          <div class="chips-row"><div class="chip hot">programme INITIATE</div><div class="chip">crédits + mentorat</div><div class="chip">référent ingénieur</div></div>
+        </div>
+      </div>
+      <div class="rgpd fade" style="--d:6"><span class="rk">ESTIMATION</span><span class="rt">Les fourchettes GPU·h ci-dessus sont des <b>estimations initiales</b>, construites à partir de l'intensité de calcul de chaque cas d'usage — à <b>calibrer avec vos équipes d'ingénieurs</b>, pas des valeurs garanties.</span></div>
+      <div class="cue fade" style="--d:7"><span class="key" style="animation:none">→</span> Marco Michon · Gaspard Briand — Qualee · Luxembourg</div>
+    </div>
+  </section>
+
+</main>
+
+<div class="hud" aria-hidden="true">
+  <div class="topbar"><i id="prog"></i></div>
+  <div class="brand"><b>POURQUOI</b> LUXPROVIDE</div>
+  <div class="meta"><span class="act" id="act">OUVERTURE</span><span class="count"><b id="cur">00</b> / <span id="tot">08</span></span></div>
+  <nav class="rail" id="rail"></nav>
+  <div class="foot"><span><kbd>←</kbd><kbd>→</kbd> Naviguer</span><span><kbd>F</kbd> Plein écran</span></div>
+</div>
+
+<script src="https://unpkg.com/gsap@3.12.5/dist/gsap.min.js"></script>
+<script>
+(function(){
+  "use strict";
+  var reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  /* ================= PARTICLE FIELD (raw WebGL) ================= */
+  var N = reduce ? 900 : 2600;
+  var canvas=document.getElementById('gl'), gl=null;
+  try{ gl=canvas.getContext('webgl',{antialias:true,alpha:true,premultipliedAlpha:false}); }catch(e){}
+  function fill(fn){ var a=new Float32Array(N*3); for(var i=0;i<N;i++) fn(a,i*3,i); return a; }
+  function rnd(){ return Math.random(); }
+  function gauss(){ return (rnd()+rnd()+rnd()+rnd()-2)/2; }
+  var GOLD=Math.PI*(3-Math.sqrt(5));
+  var F={
+    scatter:fill(function(a,o){ var r=2.4+rnd()*2.2,t=rnd()*6.283,p=Math.acos(2*rnd()-1); a[o]=r*Math.sin(p)*Math.cos(t);a[o+1]=r*Math.sin(p)*Math.sin(t);a[o+2]=r*Math.cos(p); }),
+    cloud:fill(function(a,o){ a[o]=gauss()*1.15;a[o+1]=gauss()*.82;a[o+2]=gauss()*1.05; }),
+    sphere:fill(function(a,o,i){ var y=1-(i/(N-1))*2,r=Math.sqrt(Math.max(0,1-y*y)),t=i*GOLD; a[o]=Math.cos(t)*r;a[o+1]=y;a[o+2]=Math.sin(t)*r; }),
+    grid:fill(function(a,o,i){ var s=Math.floor(Math.sqrt(N)),c=i%s,r=Math.floor(i/s),x=(c/(s-1)*2-1),y=(r/(s-1)*2-1); a[o]=x*1.25;a[o+1]=y*.82;a[o+2]=.28*Math.sin(x*4.5)*Math.cos(y*4.5); }),
+    disperse:fill(function(a,o){ var r=1.1+Math.abs(gauss())*1.7,t=rnd()*6.283,p=Math.acos(2*rnd()-1); a[o]=r*Math.sin(p)*Math.cos(t)*1.25;a[o+1]=r*Math.sin(p)*Math.sin(t)*.7;a[o+2]=r*Math.cos(p); }),
+    box:fill(function(a,o){ var ax=Math.floor(rnd()*3),s=rnd()<.5?-1:1,u=rnd()*2-1,v=rnd()*2-1,p=[u,v]; p.splice(ax,0,s); a[o]=p[0]*.95;a[o+1]=p[1]*.78;a[o+2]=p[2]*.95; }),
+    converge:fill(function(a,o){ a[o]=gauss()*.42;a[o+1]=gauss()*.34;a[o+2]=gauss()*.42; })
+  };
+  var FORMS=[F.cloud,F.sphere,F.grid,F.disperse,F.box,F.converge];
+  var seeds=new Float32Array(N); for(var i=0;i<N;i++) seeds[i]=Math.random();
+  var particles={morph:function(){},resize:function(){}};
+
+  if(gl){
+    var dpr=Math.min(window.devicePixelRatio||1,2);
+    var vsrc='attribute vec3 aA;attribute vec3 aB;attribute float aSeed;uniform mat4 uMVP;uniform float uMix;uniform float uTime;uniform float uSize;varying float vTw;'+
+      'void main(){float m=uMix*uMix*(3.0-2.0*uMix);vec3 p=mix(aA,aB,m);'+
+      'p+=0.035*vec3(sin(uTime*.5+aSeed*39.0),cos(uTime*.42+aSeed*27.0),sin(uTime*.33+aSeed*17.0));'+
+      'vec4 mv=uMVP*vec4(p,1.0);gl_Position=mv;vTw=0.55+0.45*sin(uTime*1.8+aSeed*44.0);'+
+      'gl_PointSize=clamp(uSize*vTw/max(0.15,mv.w),0.5,7.0);}';
+    var fsrc='precision mediump float;varying float vTw;void main(){vec2 c=gl_PointCoord-0.5;float d=length(c);float a=smoothstep(0.5,0.0,d);a*=vTw;if(a<0.01)discard;gl_FragColor=vec4(1.0,1.0,1.0,a*0.9);}';
+    function sh(t,s){ var o=gl.createShader(t);gl.shaderSource(o,s);gl.compileShader(o);return o; }
+    var prog=gl.createProgram();gl.attachShader(prog,sh(gl.VERTEX_SHADER,vsrc));gl.attachShader(prog,sh(gl.FRAGMENT_SHADER,fsrc));gl.linkProgram(prog);gl.useProgram(prog);
+    var bufA=gl.createBuffer(),bufB=gl.createBuffer(),bufS=gl.createBuffer();
+    var lA=gl.getAttribLocation(prog,'aA'),lB=gl.getAttribLocation(prog,'aB'),lS=gl.getAttribLocation(prog,'aSeed');
+    gl.bindBuffer(gl.ARRAY_BUFFER,bufS);gl.bufferData(gl.ARRAY_BUFFER,seeds,gl.STATIC_DRAW);gl.enableVertexAttribArray(lS);gl.vertexAttribPointer(lS,1,gl.FLOAT,false,0,0);
+    var dataA=F.scatter.slice(0),dataB=F.scatter.slice(0);
+    function upA(){ gl.bindBuffer(gl.ARRAY_BUFFER,bufA);gl.bufferData(gl.ARRAY_BUFFER,dataA,gl.DYNAMIC_DRAW);gl.enableVertexAttribArray(lA);gl.vertexAttribPointer(lA,3,gl.FLOAT,false,0,0); }
+    function upB(){ gl.bindBuffer(gl.ARRAY_BUFFER,bufB);gl.bufferData(gl.ARRAY_BUFFER,dataB,gl.DYNAMIC_DRAW);gl.enableVertexAttribArray(lB);gl.vertexAttribPointer(lB,3,gl.FLOAT,false,0,0); }
+    upA();upB();
+    var uMVP=gl.getUniformLocation(prog,'uMVP'),uMix=gl.getUniformLocation(prog,'uMix'),uTime=gl.getUniformLocation(prog,'uTime'),uSize=gl.getUniformLocation(prog,'uSize');
+    gl.enable(gl.BLEND);gl.blendFunc(gl.SRC_ALPHA,gl.ONE);gl.disable(gl.DEPTH_TEST);gl.clearColor(0,0,0,0);
+    var mixV=1,mixFrom=1,mixTo=1,mixT0=0,mixDur=1.6;
+    function resize(){ canvas.width=window.innerWidth*dpr;canvas.height=window.innerHeight*dpr;canvas.style.width=window.innerWidth+'px';canvas.style.height=window.innerHeight+'px';gl.viewport(0,0,canvas.width,canvas.height); }
+    resize();
+    var pX=0,pY=0,tX=0,tY=0;
+    function perspective(fov,asp,n,f){ var t=1/Math.tan(fov/2),nf=1/(n-f); return [t/asp,0,0,0,0,t,0,0,0,0,(f+n)*nf,-1,0,0,2*f*n*nf,0]; }
+    function mul(a,b){ var o=new Array(16); for(var c=0;c<4;c++)for(var r=0;r<4;r++){ var s=0; for(var k=0;k<4;k++)s+=a[k*4+r]*b[c*4+k]; o[c*4+r]=s; } return o; }
+    function rotY(t){ var c=Math.cos(t),s=Math.sin(t); return [c,0,-s,0,0,1,0,0,s,0,c,0,0,0,0,1]; }
+    function rotX(t){ var c=Math.cos(t),s=Math.sin(t); return [1,0,0,0,0,c,s,0,0,-s,c,0,0,0,0,1]; }
+    function trans(x,y,z){ return [1,0,0,0,0,1,0,0,0,0,1,0,x,y,z,1]; }
+    var startT=null;
+    function frame(ts){
+      if(startT===null)startT=ts; var t=(ts-startT)/1000;
+      pX+=(tX-pX)*0.05; pY+=(tY-pY)*0.05;
+      if(mixV<1){ var k=(t-mixT0)/mixDur; k=k>1?1:k; mixV=mixFrom+(mixTo-mixFrom)*(1-Math.pow(1-k,3)); if(k>=1)mixV=1; }
+      var P=perspective(0.86,canvas.width/canvas.height,0.1,100);
+      var V=mul(mul(trans(0,0,-3.15),rotX(pY*0.5-0.06)),rotY(t*0.06+pX*0.6));
+      gl.clear(gl.COLOR_BUFFER_BIT);
+      gl.uniformMatrix4fv(uMVP,false,new Float32Array(mul(P,V)));
+      gl.uniform1f(uMix,mixV);gl.uniform1f(uTime,t);gl.uniform1f(uSize,(reduce?7.0:9.5)*dpr);
+      gl.drawArrays(gl.POINTS,0,N);
+      requestAnimationFrame(frame);
+    }
+    requestAnimationFrame(frame);
+    particles.morph=function(target,dur){
+      var m=mixV*mixV*(3-2*mixV),cur=new Float32Array(N*3);
+      for(var i=0;i<N*3;i++) cur[i]=dataA[i]+(dataB[i]-dataA[i])*m;
+      dataA=cur;dataB=target;upA();upB();
+      mixFrom=0;mixTo=1;mixV=0;mixDur=dur||1.5;mixT0=(performance.now()-startT)/1000;
+    };
+    particles.resize=resize;
+    window.addEventListener('resize',resize);
+    window.addEventListener('pointermove',function(e){ tX=(e.clientX/window.innerWidth-0.5)*2; tY=(e.clientY/window.innerHeight-0.5)*2; });
+  } else {
+    canvas.style.display='none'; document.body.style.background='radial-gradient(120% 90% at 50% 30%, #161616, #000)';
+  }
+
+  /* ================= SVG BUILDERS ================= */
+  var NS='http://www.w3.org/2000/svg';
+  function el(n,at){ var e=document.createElementNS(NS,n); for(var k in at) e.setAttribute(k,at[k]); return e; }
+
+  function buildNetwork(svg){
+    svg.innerHTML='';
+    var cx=210,cy=160,R=118;
+    svg.appendChild(el('ellipse',{cx:cx,cy:cy,rx:200,ry:150,class:'bound'}));
+    var bl=el('text',{x:cx,y:24,'text-anchor':'middle',class:'boundlab'}); bl.textContent='UE · Luxembourg'; svg.appendChild(bl);
+    var angs=[-90,-30,30,90,150,210], nodes=[], edges=[], pkts=[];
+    svg.appendChild(el('circle',{cx:cx,cy:cy,r:26,class:'nd core'}));
+    var cl=el('text',{x:cx,y:cy+4,'text-anchor':'middle',class:'ndlab c'}); cl.textContent='MODÈLE'; svg.appendChild(cl);
+    angs.forEach(function(a,i){
+      var rad=a*Math.PI/180, x=cx+R*Math.cos(rad), y=cy+R*0.82*Math.sin(rad);
+      var e=el('line',{x1:x,y1:y,x2:cx,y2:cy,class:'edge'}); svg.appendChild(e); edges.push(e);
+      var n=el('circle',{cx:x,cy:y,r:15,class:'nd'}); svg.appendChild(n); nodes.push(n);
+      var t=el('text',{x:x,y:y+3.5,'text-anchor':'middle',class:'ndlab'}); t.textContent='SITE'; svg.appendChild(t);
+      var p=el('circle',{cx:x,cy:y,r:3,class:'pkt'}); p.style.opacity=0; svg.appendChild(p); pkts.push({p:p,x:x,y:y});
+    });
+    return {nodes:nodes,edges:edges,pkts:pkts,cx:cx,cy:cy};
+  }
+
+  function buildFlinky(svg){
+    svg.innerHTML='';
+    var lx=30,ly=118,lw=140,lh=64, ox=lx+lw, oy=ly+lh/2;
+    var us=el('rect',{x:lx,y:ly,width:lw,height:lh,rx:6,class:'modrect live'}); svg.appendChild(us);
+    var ut=el('text',{x:lx+lw/2,y:ly+lh/2+4,'text-anchor':'middle',class:'modlab live'}); ut.textContent='NOTRE PRODUIT'; svg.appendChild(ut);
+    var mods=[['OCR',true,'bons de livraison'],['LLM',true,'assistant cuisine'],['IMAGE',false,''],['AUDIO',false,'']];
+    var mx=300,mw=136,mh=44,gap=16, edges=[],pkts=[];
+    mods.forEach(function(m,i){
+      var my=24+i*(mh+gap), mcy=my+mh/2;
+      var e=el('line',{x1:ox,y1:oy,x2:mx,y2:mcy,class:'edge'+(m[1]?' live':'')}); svg.appendChild(e);
+      if(m[1]) edges.push(e);
+      var r=el('rect',{x:mx,y:my,width:mw,height:mh,rx:6,class:'modrect'+(m[1]?' live':'')}); svg.appendChild(r);
+      var t=el('text',{x:mx+mw/2,y:mcy+(m[2]?-2:4),'text-anchor':'middle',class:'modlab'+(m[1]?' live':'')}); t.textContent=m[0]; svg.appendChild(t);
+      if(m[2]){ var st=el('text',{x:mx+mw/2,y:mcy+13,'text-anchor':'middle',class:'modsub'}); st.textContent=m[2]; svg.appendChild(st); }
+      if(m[1]){ var p=el('circle',{cx:ox,cy:oy,r:3.2,class:'pkt'}); p.style.opacity=0; svg.appendChild(p); pkts.push({p:p,x1:ox,y1:oy,x2:mx,y2:mcy}); }
+    });
+    var bl=el('text',{x:230,y:292,'text-anchor':'middle',class:'boundlab'}); bl.textContent='Flinky · propulsé par MeluXina'; svg.appendChild(bl);
+    return {edges:edges,pkts:pkts};
+  }
+
+  function buildPipeline(svg){
+    svg.innerHTML='';
+    // SocGen perimeter (left)
+    svg.appendChild(el('rect',{x:12,y:74,width:156,height:150,rx:10,class:'bound'}));
+    var pl=el('text',{x:90,y:62,'text-anchor':'middle',class:'boundlab'}); pl.textContent='Périmètre SocGen'; svg.appendChild(pl);
+    // real data box
+    var A={x:28,y:106,w:124,h:64};
+    var ar=el('rect',{x:A.x,y:A.y,width:A.w,height:A.h,rx:6,class:'modrect'}); svg.appendChild(ar);
+    var at=el('text',{x:A.x+A.w/2,y:A.y+26,'text-anchor':'middle',class:'modlab'}); at.textContent='DONNÉES RÉELLES'; svg.appendChild(at);
+    var as=el('text',{x:A.x+A.w/2,y:A.y+44,'text-anchor':'middle',class:'modsub'}); as.textContent='badgeage · régimes · art. 9'; svg.appendChild(as);
+    // MeluXina generator (top middle)
+    var B={x:200,y:30,w:120,h:52};
+    var br=el('rect',{x:B.x,y:B.y,width:B.w,height:B.h,rx:6,class:'modrect live'}); svg.appendChild(br);
+    var bt=el('text',{x:B.x+B.w/2,y:B.y+22,'text-anchor':'middle',class:'modlab live'}); bt.textContent='MELUXINA'; svg.appendChild(bt);
+    var bs=el('text',{x:B.x+B.w/2,y:B.y+38,'text-anchor':'middle',class:'modsub'}); bs.textContent='génération GPU'; svg.appendChild(bs);
+    // synthetic data (middle)
+    var C={x:200,y:190,w:120,h:52};
+    var cr=el('rect',{x:C.x,y:C.y,width:C.w,height:C.h,rx:6,class:'modrect live'}); svg.appendChild(cr);
+    var ct=el('text',{x:C.x+C.w/2,y:C.y+22,'text-anchor':'middle',class:'modlab live'}); ct.textContent='SYNTHÉTIQUES'; svg.appendChild(ct);
+    var cs=el('text',{x:C.x+C.w/2,y:C.y+38,'text-anchor':'middle',class:'modsub'}); cs.textContent='0 donnée personnelle'; svg.appendChild(cs);
+    // our models (right)
+    var D={x:364,y:106,w:86,h:64};
+    var dr=el('rect',{x:D.x,y:D.y,width:D.w,height:D.h,rx:6,class:'modrect live'}); svg.appendChild(dr);
+    var dt=el('text',{x:D.x+D.w/2,y:D.y+30,'text-anchor':'middle',class:'modlab live'}); dt.textContent='MODÈLES'; svg.appendChild(dt);
+    var ds=el('text',{x:D.x+D.w/2,y:D.y+46,'text-anchor':'middle',class:'modsub'}); ds.textContent='prévision'; svg.appendChild(ds);
+    // forbidden direct edge A->D
+    var deny=el('line',{x1:A.x+A.w,y1:A.y+A.h/2,x2:D.x,y2:D.y+D.h/2,class:'edge deny'}); svg.appendChild(deny);
+    var xg=el('g',{}); var xc=260,yc=A.y+A.h/2;
+    xg.appendChild(el('line',{x1:xc-8,y1:yc-8,x2:xc+8,y2:yc+8,class:'xmark'}));
+    xg.appendChild(el('line',{x1:xc-8,y1:yc+8,x2:xc+8,y2:yc-8,class:'xmark'}));
+    svg.appendChild(xg);
+    var xl=el('text',{x:xc,y:yc+28,'text-anchor':'middle',class:'modsub'}); xl.textContent='jamais utilisées'; svg.appendChild(xl);
+    // live edges: B->C (generate), C->D (train)
+    var e1=el('path',{d:'M'+(B.x+B.w/2)+','+(B.y+B.h)+' L'+(C.x+C.w/2)+','+C.y,class:'edge live'}); svg.appendChild(e1);
+    var e2=el('path',{d:'M'+(C.x+C.w)+','+(C.y+C.h/2)+' C 350,'+(C.y+C.h/2)+' 360,'+(D.y+D.h/2+20)+' '+D.x+','+(D.y+D.h/2+8),class:'edge live'}); svg.appendChild(e2);
+    var p1=el('circle',{r:3.2,class:'pkt'}); p1.style.opacity=0; svg.appendChild(p1);
+    var p2=el('circle',{r:3.2,class:'pkt'}); p2.style.opacity=0; svg.appendChild(p2);
+    return {deny:deny,x:xg,edges:[e1,e2],pkts:[{p:p1,path:e1},{p:p2,path:e2}],boxes:[ar,br,cr,dr]};
+  }
+
+  function buildRadar(svg){
+    svg.innerHTML='';
+    var cx=180,cy=160,R=112;
+    var labs=['COÛT','NUTRITION','ALLERGÈNES','CARBONE','PRÉFÉRENCES'];
+    var vals=[.82,.9,1,.72,.66];
+    function pt(i,f){ var a=(-90+i*72)*Math.PI/180; return [cx+R*f*Math.cos(a),cy+R*f*Math.sin(a)]; }
+    [0.33,0.66,1].forEach(function(f){
+      var d=''; for(var i=0;i<5;i++){ var p=pt(i,f); d+=(i?'L':'M')+p[0]+','+p[1]; } d+='Z';
+      svg.appendChild(el('path',{d:d,class:'rgrid'}));
+    });
+    var axes=[];
+    for(var i=0;i<5;i++){ var p=pt(i,1); var ax=el('line',{x1:cx,y1:cy,x2:p[0],y2:p[1],class:'raxis'}); svg.appendChild(ax); axes.push(ax); }
+    var d=''; for(var i2=0;i2<5;i2++){ var p2=pt(i2,vals[i2]); d+=(i2?'L':'M')+p2[0]+','+p2[1]; } d+='Z';
+    var poly=el('path',{d:d,class:'rpoly'}); svg.appendChild(poly);
+    var dots=[];
+    for(var i3=0;i3<5;i3++){ var p3=pt(i3,vals[i3]); var dot=el('circle',{cx:p3[0],cy:p3[1],r:4,class:'rdot'}); svg.appendChild(dot); dots.push(dot); }
+    var labels=[];
+    for(var i4=0;i4<5;i4++){ var p4=pt(i4,1.22);
+      var t=el('text',{x:p4[0],y:p4[1]+3,'text-anchor':'middle',class:'rlab'}); t.textContent=labs[i4]; svg.appendChild(t); labels.push(t); }
+    var ct=el('text',{x:cx,y:cy+5,'text-anchor':'middle',class:'rcenter'}); ct.textContent='MENU'; svg.appendChild(ct);
+    return {poly:poly,dots:dots,labels:labels,axes:axes,center:ct};
+  }
+
+  function buildVenn(svg){
+    svg.innerHTML='';
+    var C=[{x:150,y:135,l:'IA',lx:118,ly:96},{x:250,y:135,l:'RGPD',lx:282,ly:96},{x:200,y:220,l:'SOUVERAINETÉ',lx:200,ly:300}];
+    var circles=[],labels=[];
+    C.forEach(function(c){ var o=el('circle',{cx:c.x,cy:c.y,r:92,class:'vcirc'}); svg.appendChild(o); circles.push(o); });
+    C.forEach(function(c){ var t=el('text',{x:c.lx,y:c.ly,'text-anchor':'middle',class:'vlabel'}); t.textContent=c.l; svg.appendChild(t); labels.push(t); });
+    var ct=el('text',{x:200,y:170,'text-anchor':'middle',class:'vcenter'}); ct.textContent='MeluXina'; svg.appendChild(ct);
+    return {circles:circles,labels:labels,center:ct};
+  }
+
+  /* ================= DECK CONTROLLER ================= */
+  var scenes=[].slice.call(document.querySelectorAll('.scene'));
+  var total=scenes.length, cur=0, locked=false, activeTL=null;
+  var actEl=document.getElementById('act'),curEl=document.getElementById('cur'),totEl=document.getElementById('tot'),
+      progEl=document.getElementById('prog'),rail=document.getElementById('rail');
+  totEl.textContent=('0'+(total-1)).slice(-2);
+  scenes.forEach(function(s,i){ var b=document.createElement('button'); b.setAttribute('aria-label','Scène '+i); b.addEventListener('click',function(){ go(i); }); rail.appendChild(b); });
+  var dots=[].slice.call(rail.children);
+  function pad(n){ return ('0'+n).slice(-2); }
+  var g=window.gsap;
+
+  function tnum(tl,e,at,dur){
+    var to=parseFloat(e.getAttribute('data-to')),dec=parseInt(e.getAttribute('data-dec')||'0',10),
+        suf=e.getAttribute('data-suffix')||'',pre=e.getAttribute('data-prefix')||'',o={v:0};
+    e.textContent=pre+'0'+suf;
+    tl.to(o,{v:to,duration:dur||1.3,ease:'power2.out',onUpdate:function(){ e.textContent=pre+(dec?o.v.toFixed(dec):Math.round(o.v))+suf; }},at);
+  }
+  function nums(tl,s,at){ [].slice.call(s.querySelectorAll('[data-to]')).forEach(function(e,i){ tnum(tl,e,(at||0)+i*0.06,1.25); }); }
+  function copyIn(tl,s,at){
+    var lines=s.querySelectorAll('.tagline,.big');
+    if(lines.length){ g.set(lines,{opacity:0,y:16}); tl.to(lines,{opacity:1,y:0,duration:.6,stagger:.1},at||0.4); }
+  }
+  function gaugeIn(tl,s,at){
+    var gf=s.querySelector('.gfill'); if(!gf) return;
+    var C=2*Math.PI*86, pct=parseFloat(gf.getAttribute('data-pct'))/100;
+    gf.style.strokeDasharray=C; gf.style.strokeDashoffset=C;
+    tl.to(gf,{strokeDashoffset:C*(1-pct),duration:1.45,ease:'power3.out'},at||0.2);
+  }
+  function drawEdges(tl,edges,at,stag){
+    edges.forEach(function(e){ var L=e.getTotalLength(); e.style.strokeDasharray=L; e.style.strokeDashoffset=L; });
+    tl.to(edges,{strokeDashoffset:0,duration:.85,stagger:stag||.12,ease:'power2.out'},at||0.2);
+  }
+
+  var PLAYS={
+    who:function(s){
+      if(!g) return null; var tl=g.timeline({defaults:{ease:'power3.out'}});
+      var chips=s.querySelectorAll('.chip'); g.set(chips,{opacity:0,y:12});
+      nums(tl,s,0.15);
+      copyIn(tl,s,0.35);
+      tl.to(chips,{opacity:1,y:0,duration:.5,stagger:.08},0.9);
+      return tl;
+    },
+    market:function(s){
+      if(!g) return null; var tl=g.timeline({defaults:{ease:'power3.out'}});
+      var pf=s.querySelector('.pfill'); g.set(pf,{width:0});
+      nums(tl,s,0.1);
+      tl.to(pf,{width:pf.getAttribute('data-v')+'%',duration:1.4,ease:'power3.inOut'},0.4);
+      copyIn(tl,s,0.5);
+      return tl;
+    },
+    uc2:function(s){
+      if(!g) return null;
+      var mx=s.querySelector('.matrix');
+      if(!mx.children.length){ for(var i=0;i<120;i++){ var c=document.createElement('i'); c.className='cell'+(Math.random()<0.22?' on':''); mx.appendChild(c); } }
+      var cells=mx.querySelectorAll('.cell'), bars=s.querySelectorAll('.tfill'),
+          chips=s.querySelectorAll('.chip'), scen=s.querySelectorAll('.scen>*');
+      var tl=g.timeline({defaults:{ease:'power3.out'}});
+      g.set(cells,{opacity:0,scale:.3}); g.set(bars,{width:0}); g.set(chips,{opacity:0,y:12}); g.set(scen,{opacity:0,y:10});
+      tl.to(cells,{opacity:1,scale:1,duration:.5,stagger:{each:.008,from:'edges',grid:[8,15]}},0.05);
+      tl.to(chips,{opacity:1,y:0,duration:.5,stagger:.07},0.3);
+      tl.to(scen,{opacity:1,y:0,duration:.45,stagger:.09},0.6);
+      tl.to(bars,{width:function(i,e){return e.getAttribute('data-v')+'%';},duration:1.1,stagger:.18},1.0);
+      return tl;
+    },
+    uc3:function(s){
+      if(!g) return null; var tl=g.timeline({defaults:{ease:'power3.out'}});
+      var bars=s.querySelectorAll('.rfill'); g.set(bars,{width:0});
+      var chips=s.querySelectorAll('.chip'); g.set(chips,{opacity:0,y:12});
+      nums(tl,s,0.1);
+      tl.to(bars,{width:function(i,e){return e.getAttribute('data-v')+'%';},duration:1.2,stagger:.18},0.2);
+      gaugeIn(tl,s,0.35);
+      copyIn(tl,s,0.5);
+      tl.to(chips,{opacity:1,y:0,duration:.5,stagger:.08},0.9);
+      return tl;
+    },
+    uc4:function(s){
+      if(!g) return null;
+      var pp=buildPipeline(document.getElementById('pipesvg'));
+      var tl=g.timeline({defaults:{ease:'power2.out'}});
+      g.set(pp.boxes,{opacity:0,transformOrigin:'center',scale:.85});
+      g.set(pp.x,{opacity:0,transformOrigin:'260px 138px',scale:.2});
+      tl.to(pp.boxes,{opacity:1,scale:1,duration:.55,stagger:.12},0.05);
+      tl.to(pp.x,{opacity:1,scale:1,duration:.5,ease:'back.out(2.5)'},0.55);
+      drawEdges(tl,pp.edges,0.7,.2);
+      if(!reduce){
+        pp.pkts.forEach(function(pk,i){
+          var L=pk.path.getTotalLength(), o={t:0}, st=pk.path.getPointAtLength(0);
+          pk.p.setAttribute('cx',st.x); pk.p.setAttribute('cy',st.y);
+          tl.to(pk.p,{opacity:1,duration:.2},1.2+i*0.15);
+          tl.to(o,{t:1,duration:1.4,ease:'power1.inOut',repeat:-1,repeatDelay:.3,
+            onUpdate:function(){ var pt=pk.path.getPointAtLength(L*o.t); pk.p.setAttribute('cx',pt.x); pk.p.setAttribute('cy',pt.y); }},1.2+i*0.3);
+        });
+      }
+      copyIn(tl,s,0.6);
+      var chips4=s.querySelectorAll('.chip'); g.set(chips4,{opacity:0,y:12});
+      tl.to(chips4,{opacity:1,y:0,duration:.5,stagger:.08},1.4);
+      return tl;
+    },
+    uc5:function(s){
+      if(!g) return null;
+      var net=buildNetwork(document.getElementById('netsvg'));
+      var tl=g.timeline({defaults:{ease:'power2.out'}});
+      g.set(net.nodes,{opacity:0,transformOrigin:'center',scale:.3});
+      drawEdges(tl,net.edges,0.25,.09);
+      tl.to(net.nodes,{opacity:1,scale:1,duration:.55,stagger:.09},0.1);
+      if(!reduce){
+        net.pkts.forEach(function(pk,i){
+          tl.to(pk.p,{opacity:1,duration:.2},0.9+i*0.05);
+          tl.to(pk.p,{attr:{cx:net.cx,cy:net.cy},duration:1.3,ease:'power1.inOut',repeat:-1,repeatDelay:.3,
+            onRepeat:function(){ pk.p.setAttribute('cx',pk.x); pk.p.setAttribute('cy',pk.y); }},0.9+i*0.12);
+        });
+      } else { net.pkts.forEach(function(pk){ pk.p.style.opacity=1; }); }
+      copyIn(tl,s,0.5);
+      var chips=s.querySelectorAll('.chip'); g.set(chips,{opacity:0,y:12});
+      tl.to(chips,{opacity:1,y:0,duration:.5,stagger:.08},1.0);
+      return tl;
+    },
+    uc7:function(s){
+      if(!g) return null;
+      var rd=buildRadar(document.getElementById('radarsvg'));
+      var tl=g.timeline({defaults:{ease:'power3.out'}});
+      var L=rd.poly.getTotalLength();
+      rd.poly.style.strokeDasharray=L; rd.poly.style.strokeDashoffset=L;
+      g.set(rd.poly,{fillOpacity:0});
+      g.set(rd.dots,{opacity:0,transformOrigin:'center',scale:.2});
+      g.set(rd.labels,{opacity:0});
+      g.set(rd.center,{opacity:0});
+      g.set(rd.axes,{opacity:0});
+      tl.to(rd.axes,{opacity:1,duration:.5,stagger:.07},0.05);
+      tl.to(rd.labels,{opacity:1,duration:.5,stagger:.08},0.25);
+      tl.to(rd.poly,{strokeDashoffset:0,duration:1.3,ease:'power2.inOut'},0.5);
+      tl.to(rd.poly,{fillOpacity:1,duration:.6},1.5);
+      tl.to(rd.dots,{opacity:1,scale:1,duration:.4,stagger:.09,ease:'back.out(2.5)'},1.1);
+      tl.to(rd.center,{opacity:1,duration:.5},1.7);
+      copyIn(tl,s,0.5);
+      var chips=s.querySelectorAll('.chip'); g.set(chips,{opacity:0,y:12});
+      tl.to(chips,{opacity:1,y:0,duration:.5,stagger:.08},1.0);
+      return tl;
+    },
+    uc8:function(s){
+      if(!g) return null;
+      var fk=buildFlinky(document.getElementById('flinksvg'));
+      var tl=g.timeline({defaults:{ease:'power2.out'}});
+      drawEdges(tl,fk.edges,0.2,.15);
+      if(!reduce){
+        fk.pkts.forEach(function(pk,i){
+          tl.to(pk.p,{opacity:1,duration:.2},0.8+i*0.1);
+          tl.fromTo(pk.p,{attr:{cx:pk.x1,cy:pk.y1}},{attr:{cx:pk.x2,cy:pk.y2},duration:1.1,ease:'power1.in',repeat:-1,repeatDelay:.25},0.8+i*0.15);
+        });
+      }
+      copyIn(tl,s,0.4);
+      var chips8=s.querySelectorAll('.chip'); g.set(chips8,{opacity:0,y:12});
+      tl.to(chips8,{opacity:1,y:0,duration:.5,stagger:.08},1.0);
+      return tl;
+    },
+    synth:function(s){
+      if(!g) return null;
+      var vn=buildVenn(document.getElementById('vennsvg'));
+      var tl=g.timeline({defaults:{ease:'power3.out'}});
+      g.set(vn.circles,{opacity:0,transformOrigin:'center',scale:.2});
+      g.set(vn.labels,{opacity:0}); g.set(vn.center,{opacity:0,transformOrigin:'center',scale:.6});
+      tl.to(vn.circles,{opacity:1,scale:1,duration:.9,stagger:.18,ease:'elastic.out(.7,.6)'},0.1);
+      tl.to(vn.labels,{opacity:1,duration:.5,stagger:.12},0.5);
+      tl.to(vn.center,{opacity:1,scale:1,duration:.7,ease:'back.out(2)'},1.1);
+      return tl;
+    },
+    ask:function(s){
+      if(!g) return null; var tl=g.timeline({defaults:{ease:'power3.out'}});
+      var chips=s.querySelectorAll('.chip'); g.set(chips,{opacity:0,y:12});
+      nums(tl,s,0.15);
+      copyIn(tl,s,0.35);
+      tl.to(chips,{opacity:1,y:0,duration:.5,stagger:.08},0.9);
+      return tl;
+    }
+  };
+
+  function go(n){
+    if(n<0||n>=total||n===cur||locked) return;
+    locked=true; setTimeout(function(){locked=false;},780);
+    if(activeTL){ activeTL.kill(); activeTL=null; }
+    var prev=cur; cur=n;
+    scenes[prev].classList.remove('is-active');
+    var s=scenes[cur]; s.classList.add('is-active');
+    actEl.style.opacity=0;
+    setTimeout(function(){ actEl.textContent=s.getAttribute('data-act'); actEl.style.opacity=1; },260);
+    curEl.textContent=pad(cur);
+    progEl.style.width=(cur/(total-1)*100)+'%';
+    dots.forEach(function(d,i){ d.setAttribute('aria-current',i===cur?'true':'false'); });
+    particles.morph(FORMS[parseInt(s.getAttribute('data-form'),10)],1.5);
+    var pf=PLAYS[s.id];
+    if(pf) setTimeout(function(){ if(cur===n) activeTL=pf(s); },440);
+  }
+  function next(){ go(cur+1); }
+  function prev(){ go(cur-1); }
+
+  window.addEventListener('keydown',function(e){
+    if(e.key==='ArrowRight'||e.key==='PageDown'||e.key===' '||e.key==='Enter'){ e.preventDefault(); next(); }
+    else if(e.key==='ArrowLeft'||e.key==='PageUp'){ e.preventDefault(); prev(); }
+    else if(e.key==='Home'){ go(0); } else if(e.key==='End'){ go(total-1); }
+    else if(e.key==='f'||e.key==='F'){ if(!document.fullscreenElement){ document.documentElement.requestFullscreen&&document.documentElement.requestFullscreen(); } else { document.exitFullscreen&&document.exitFullscreen(); } }
+  });
+  var wl=0;
+  window.addEventListener('wheel',function(e){ var now=performance.now(); if(now-wl<900)return; if(Math.abs(e.deltaY)<18)return; wl=now; e.deltaY>0?next():prev(); },{passive:true});
+  var tsY=null;
+  window.addEventListener('touchstart',function(e){ tsY=e.touches[0].clientY; },{passive:true});
+  window.addEventListener('touchend',function(e){ if(tsY===null)return; var dy=tsY-e.changedTouches[0].clientY; if(Math.abs(dy)>50){ dy>0?next():prev(); } tsY=null; },{passive:true});
+
+  function launch(){
+    scenes[0].classList.add('is-active');
+    dots[0].setAttribute('aria-current','true');
+    actEl.textContent=scenes[0].getAttribute('data-act');
+    if(gl) particles.morph(FORMS[0],reduce?0.8:2.6);
+  }
+  if(document.readyState!=='loading') setTimeout(launch,80);
+  else window.addEventListener('DOMContentLoaded',function(){ setTimeout(launch,80); });
+})();
+</script>
